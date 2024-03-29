@@ -17,8 +17,8 @@ const port = process.env.PORT || 3000;
 
 connectDB();
 
-app.use("/api", taskRoutes);
-app.use("/api", userRoutes);
+app.use("/", taskRoutes);
+app.use("/", userRoutes);
 
 app.listen(port, () => {
   console.log(`Listening on port ${port}`);
