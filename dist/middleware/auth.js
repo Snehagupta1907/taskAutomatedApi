@@ -12,18 +12,23 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.authenticateToken = void 0;
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const User_1 = __importDefault(require("../models/User"));
-const authorizeToken = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    const token = req.header('Authorization');
+const authenticateToken = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const token = req.headers['authorization'];
+    console.log(token, "auth");
     if (!token) {
         return res.status(401).json({ message: 'Unauthorized: Token missing' });
     }
-    const user = yield User_1.default.findOne({ apiKey: token });
-    if (!user) {
+    try {
+        const decoded = jsonwebtoken_1.default.verify(token, 'your-secret-key');
+        req.user = yield User_1.default.findById(decoded.userId);
+        next();
+    }
+    catch (error) {
         return res.status(401).json({ message: 'Unauthorized: Invalid token' });
     }
-    req.user = user;
-    next();
 });
-exports.default = authorizeToken;
+exports.authenticateToken = authenticateToken;
 //# sourceMappingURL=auth.js.map

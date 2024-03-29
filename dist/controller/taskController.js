@@ -15,13 +15,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getTasksByUserToken = exports.getTasksByStatus = exports.executeTask = exports.createTask = void 0;
 const Task_1 = __importDefault(require("../models/Task"));
 const axios_1 = __importDefault(require("axios"));
-const User_1 = __importDefault(require("../models/User"));
+//task creation post endpoint
 const createTask = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { endpoint, delay, method } = req.query;
-    let { to, subject, text } = req.body;
+    const { to, subject, text } = req.body;
+    const user = req.user;
     try {
-        const userToken = req.headers.authorization;
-        const user = yield User_1.default.findOne({ apiKey: userToken });
         if (!user) {
             throw new Error("User not found");
         }
@@ -80,6 +79,7 @@ const executeTask = (task) => __awaiter(void 0, void 0, void 0, function* () {
     }
 });
 exports.executeTask = executeTask;
+// get task status
 const getTasksByStatus = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { status } = req.params;
     try {
@@ -91,10 +91,10 @@ const getTasksByStatus = (req, res) => __awaiter(void 0, void 0, void 0, functio
     }
 });
 exports.getTasksByStatus = getTasksByStatus;
+//get task status by user token
 const getTasksByUserToken = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const userToken = req.headers.authorization;
-        const user = yield User_1.default.findOne({ apiKey: userToken });
+        const user = req.user;
         if (!user) {
             throw new Error("User not found");
         }

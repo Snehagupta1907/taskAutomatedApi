@@ -1,22 +1,33 @@
-import { Request, Response } from "express";
-import User from "../models/User";
-import { v4 as uuidv4 } from 'uuid';
+import { Request, Response } from 'express';
+import User, { IUser } from '../models/User';
+import jwt from 'jsonwebtoken';
 
 export const registerUser = async (req: Request, res: Response) => {
-    const { username } = req.body;
-    const apiKey = generateApiKey(); 
-  
+    const { username, password } = req.body;
+
     try {
-      const user = await User.create({ username, apiKey });
-      res.status(201).json({ user, apiKey });
+        const user = await User.create({ username, password });
+        res.status(201).json({ message: 'User registered successfully' });
     } catch (error) {
-      console.error('Error registering user:', error);
-      res.status(500).json({ message: 'Internal server error' });
+        console.error('Error registering user:', error);
+        res.status(500).json({ message: 'Internal server error' });
     }
-  };
+};
 
+export const loginUser = async (req: Request, res: Response) => {
+    const { username, password } = req.body;
 
+    try {
+        const user = await User.findOne({ username, password });
 
-const generateApiKey = (): string => {
-  return uuidv4();
+        if (!user) {
+            return res.status(401).json({ message: 'Invalid username or password' });
+        }
+
+        const token = jwt.sign({ userId: user._id }, 'your-secret-key', { expiresIn: '1h' });
+        res.status(200).json({ message: 'Login successful', token });
+    } catch (error) {
+        console.error('Error logging in user:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
 };
