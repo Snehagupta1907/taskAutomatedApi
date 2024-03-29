@@ -4,9 +4,17 @@
   "description": "",
   "main": "src/app.ts",
   "scripts": {
+    "build": "rimraf dist && tsc",
+    "ts.check": "tsc --project tsconfig.json",
+    "add-build": "git add dist",
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon --watch \"src/**\" --ext \"ts,json\" --exec \"ts-node src/app.ts\""
   },
+  "pre-commit": [
+    "ts.check",
+    "build",
+    "add-build"
+  ],
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -26,7 +34,10 @@
     "@types/mongoose": "^5.11.97",
     "@types/node": "^20.11.30",
     "@types/uuid": "^9.0.8",
+    "add": "^2.0.6",
     "nodemon": "^3.1.0",
+    "pre-commit": "^1.2.2",
+    "rimraf": "^5.0.5",
     "typescript": "^5.4.3"
   }
 }
