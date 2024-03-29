@@ -18,7 +18,7 @@ const port = process.env.PORT || 3000;
 
 connectDB();
 
-app.use("/", taskRoutes);
+app.use("/", testRoutes);
 app.use("/api", taskRoutes);
 app.use("/api", userRoutes);
 

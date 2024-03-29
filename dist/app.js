@@ -10,13 +10,14 @@ const cors_1 = __importDefault(require("cors"));
 const database_1 = require("./database");
 const Task_1 = __importDefault(require("./routes/Task"));
 const User_1 = __importDefault(require("./routes/User"));
+const Test_1 = __importDefault(require("./routes/Test"));
 const app = (0, express_1.default)();
 app.use(express_1.default.json());
 app.use(express_1.default.urlencoded({ extended: true }));
 app.use((0, cors_1.default)());
 const port = process.env.PORT || 3000;
 (0, database_1.connectDB)();
-app.use("/", Task_1.default);
+app.use("/", Test_1.default);
 app.use("/api", Task_1.default);
 app.use("/api", User_1.default);
 app.listen(port, () => {
