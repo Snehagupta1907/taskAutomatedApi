@@ -17,7 +17,8 @@ app.use((0, cors_1.default)());
 const port = process.env.PORT || 3000;
 (0, database_1.connectDB)();
 app.use("/", Task_1.default);
-app.use("/", User_1.default);
+app.use("/api", Task_1.default);
+app.use("/api", User_1.default);
 app.listen(port, () => {
     console.log(`Listening on port ${port}`);
 });
