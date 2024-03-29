@@ -53,6 +53,9 @@ const executeTask = (task) => __awaiter(void 0, void 0, void 0, function* () {
         const reqData = {
             method: task.method,
             url: task.endpoint,
+            headers: {
+                "Content-Type": "application/json",
+            },
         };
         if (task.method.toLowerCase() !== "get") {
             reqData.data = task.data;

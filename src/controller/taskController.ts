@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
-import Task from "../models/Task";
+import Task,{ITask} from "../models/Task";
 import axios, { AxiosResponse } from "axios";
-import User from "../models/User";
 
 //task creation post endpoint
 export const createTask = async (req: Request, res: Response) => {
@@ -43,13 +42,16 @@ export const createTask = async (req: Request, res: Response) => {
 
 
 
-export const executeTask = async (task: any) => {
+export const executeTask = async (task: ITask) => {
   try {
     await new Promise((resolve) => setTimeout(resolve, task.delay));
 
     const reqData: any = {
       method: task.method,
       url: task.endpoint,
+      headers: {
+        "Content-Type": "application/json",
+      },
     };
 
     if (task.method.toLowerCase() !== "get") {
