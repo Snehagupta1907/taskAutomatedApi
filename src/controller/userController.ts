@@ -9,8 +9,12 @@ export const registerUser = async (req: Request, res: Response) => {
         const user = await User.create({ username, password });
         res.status(201).json({ message: 'User registered successfully' });
     } catch (error) {
-        console.error('Error registering user:', error);
-        res.status(500).json({ message: 'Internal server error' });
+        if (error.code === 11000 && error.keyPattern && error.keyPattern.username === 1) {
+            res.status(400).json({ message: 'Username already exists' });
+        } else {
+            console.error('Error registering user:', error);
+            res.status(500).json({ message: 'Internal server error' });
+        }
     }
 };
 
