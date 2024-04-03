@@ -1,79 +1,51 @@
 import { Request, Response } from "express";
-import Task, { ITask } from "../models/Task";
+import Task,{ITask} from "../models/Task";
 import axios, { AxiosResponse } from "axios";
 
-// Queue class 
-class Queue<T> {
-  private items: T[];
-
-  constructor() {
-    this.items = [];
-  }
-
-  enqueue(item: T) {
-    this.items.push(item);
-  }
-
-  dequeue(): T | undefined {
-    return this.items.shift();
-  }
-
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-
-  size(): number {
-    return this.items.length;
-  }
-}
-
-const taskQueue = new Queue<ITask>();
-
-// Task creation post endpoint
+//task creation post endpoint
 export const createTask = async (req: Request, res: Response) => {
   const { endpoint, delay, method } = req.query;
   const { to, subject, text } = req.body;
-  const user = req.user;
+  const user = req.user; 
 
   try {
-    if (!user) {
-      throw new Error("User not found");
-    }
-
-    const taskData: any = {
-      endpoint: endpoint as string,
-      delay: delay ? parseInt(delay as string) : 0,
-      method: method as string,
-      userId: user._id,
-    };
-
-    if (taskData.method.toLowerCase() !== "get") {
-      if (!to || !subject || !text) {
-        throw new Error("Missing required fields: to, subject, text");
+      if (!user) {
+          throw new Error("User not found");
       }
-      taskData.data = { to, subject, text };
-    }
 
-    const task = new Task(taskData);
+      const taskData: any = {
+          endpoint: endpoint as string,
+          delay: delay ? parseInt(delay as string) : 0,
+          method: method as string,
+          userId: user._id,
+      };
 
-    await task.save();
-    console.log("Task saved");
+      if (taskData.method.toLowerCase() !== "get") {
+          if (!to || !subject || !text) {
+              throw new Error("Missing required fields: to, subject, text");
+          }
+          taskData.data = { to, subject, text };
+      }
 
+      const task = new Task(taskData);
 
-    taskQueue.enqueue(task);
+      await task.save();
+      console.log("Task saved");
 
+      const { responseData, taskStatus } = await executeTask(task);
 
-    processQueue();
-
-    res.status(200).json({ message: "Task enqueued successfully" });
+      res.status(200).json({ responseData, status: taskStatus });
   } catch (err: any) {
-    res.status(400).send(err.message);
+      res.status(400).send(err.message);
   }
 };
 
-// Execute task
-const executeTask = async (task: ITask) => {
+
+
+export const executeTask = async (task: ITask) => {
   try {
+    await new Promise((resolve) => setTimeout(resolve, task.delay));
+
     const reqData: any = {
       method: task.method,
       url: task.endpoint,
@@ -109,26 +81,6 @@ const executeTask = async (task: ITask) => {
   }
 };
 
-
-const processQueue = async () => {
-
-  if (taskQueue.isEmpty()) return;
-
-
-  const task = taskQueue.dequeue();
-
-  try {
-    await new Promise(resolve => setTimeout(resolve, task.delay));
-
-    const { responseData, taskStatus } = await executeTask(task);
-    console.log("Task execution complete:", responseData, taskStatus);
-  } catch (err) {
-    console.error("Error executing task:", err);
-  }
-
-  processQueue();
-};
-
 // get task status
 export const getTasksByStatus = async (req: Request, res: Response) => {
   const { status } = req.params;
@@ -144,16 +96,16 @@ export const getTasksByStatus = async (req: Request, res: Response) => {
 //get task status by user token
 export const getTasksByUserToken = async (req: Request, res: Response) => {
   try {
-    const user = req.user;
+      const user = req.user; 
 
-    if (!user) {
-      throw new Error("User not found");
-    }
+      if (!user) {
+          throw new Error("User not found");
+      }
 
-    const tasks = await Task.find({ userId: user._id });
+      const tasks = await Task.find({ userId: user._id });
 
-    res.status(200).json(tasks);
+      res.status(200).json(tasks);
   } catch (err: any) {
-    res.status(400).send(err.message);
+      res.status(400).send(err.message);
   }
 };

@@ -12,29 +12,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getTasksByUserToken = exports.getTasksByStatus = exports.createTask = void 0;
+exports.getTasksByUserToken = exports.getTasksByStatus = exports.executeTask = exports.createTask = void 0;
 const Task_1 = __importDefault(require("../models/Task"));
 const axios_1 = __importDefault(require("axios"));
-// Queue class 
-class Queue {
-    constructor() {
-        this.items = [];
-    }
-    enqueue(item) {
-        this.items.push(item);
-    }
-    dequeue() {
-        return this.items.shift();
-    }
-    isEmpty() {
-        return this.items.length === 0;
-    }
-    size() {
-        return this.items.length;
-    }
-}
-const taskQueue = new Queue();
-// Task creation post endpoint
+//task creation post endpoint
 const createTask = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { endpoint, delay, method } = req.query;
     const { to, subject, text } = req.body;
@@ -58,18 +39,17 @@ const createTask = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         const task = new Task_1.default(taskData);
         yield task.save();
         console.log("Task saved");
-        taskQueue.enqueue(task);
-        processQueue();
-        res.status(200).json({ message: "Task enqueued successfully" });
+        const { responseData, taskStatus } = yield (0, exports.executeTask)(task);
+        res.status(200).json({ responseData, status: taskStatus });
     }
     catch (err) {
         res.status(400).send(err.message);
     }
 });
 exports.createTask = createTask;
-// Execute task
 const executeTask = (task) => __awaiter(void 0, void 0, void 0, function* () {
     try {
+        yield new Promise((resolve) => setTimeout(resolve, task.delay));
         const reqData = {
             method: task.method,
             url: task.endpoint,
@@ -101,20 +81,7 @@ const executeTask = (task) => __awaiter(void 0, void 0, void 0, function* () {
         return { responseData: null, taskStatus: "failed" };
     }
 });
-const processQueue = () => __awaiter(void 0, void 0, void 0, function* () {
-    if (taskQueue.isEmpty())
-        return;
-    const task = taskQueue.dequeue();
-    try {
-        yield new Promise(resolve => setTimeout(resolve, task.delay));
-        const { responseData, taskStatus } = yield executeTask(task);
-        console.log("Task execution complete:", responseData, taskStatus);
-    }
-    catch (err) {
-        console.error("Error executing task:", err);
-    }
-    processQueue();
-});
+exports.executeTask = executeTask;
 // get task status
 const getTasksByStatus = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { status } = req.params;
