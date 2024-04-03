@@ -18,11 +18,13 @@ const User_1 = __importDefault(require("../models/User"));
 const authenticateToken = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const token = req.headers['authorization'];
     console.log(token, "auth");
+    const secretKey = process.env.JWT_SECRET;
+    console.log(secretKey, "sec");
     if (!token) {
         return res.status(401).json({ message: 'Unauthorized: Token missing' });
     }
     try {
-        const decoded = jsonwebtoken_1.default.verify(token, 'your-secret-key');
+        const decoded = jsonwebtoken_1.default.verify(token, secretKey);
         req.user = yield User_1.default.findById(decoded.userId);
         next();
     }
