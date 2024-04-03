@@ -101,8 +101,12 @@ const createTask = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
 exports.createTask = createTask;
 const getTasksByStatus = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { status } = req.params;
+    const user = req.user;
     try {
-        const tasks = yield Task_1.default.find({ status });
+        if (!user) {
+            return res.status(401).json({ message: 'Unauthorized: User not found' });
+        }
+        const tasks = yield Task_1.default.find({ status, userId: user._id });
         res.status(200).json(tasks);
     }
     catch (err) {

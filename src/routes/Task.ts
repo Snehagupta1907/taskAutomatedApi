@@ -8,7 +8,7 @@ router.get('/',(req,res)=>{
     res.send('Hello World');
 });
 router.post('/tasks',authenticateToken, createTask);
-router.get('/tasks/:status',getTasksByStatus);
+router.get('/tasks/:status',authenticateToken,getTasksByStatus);
 router.get('/tasks', authenticateToken, getTasksByUserToken);
 
 export default router;

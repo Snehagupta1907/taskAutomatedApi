@@ -11,7 +11,7 @@ router.get('/', (req, res) => {
     res.send('Hello World');
 });
 router.post('/tasks', auth_1.authenticateToken, taskController_1.createTask);
-router.get('/tasks/:status', taskController_1.getTasksByStatus);
+router.get('/tasks/:status', auth_1.authenticateToken, taskController_1.getTasksByStatus);
 router.get('/tasks', auth_1.authenticateToken, taskController_1.getTasksByUserToken);
 exports.default = router;
 //# sourceMappingURL=Task.js.map

@@ -210,12 +210,18 @@ export const createTask = async (req: Request, res: Response) => {
 
 export const getTasksByStatus = async (req: Request, res: Response) => {
   const { status } = req.params;
+  const user = req.user; 
 
   try {
-    const tasks = await Task.find({ status });
-    res.status(200).json(tasks);
+      if (!user) {
+          return res.status(401).json({ message: 'Unauthorized: User not found' });
+      }
+
+      const tasks = await Task.find({ status, userId: user._id });
+
+      res.status(200).json(tasks);
   } catch (err) {
-    res.status(500).json({ message: "Internal Server Error" });
+      res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
