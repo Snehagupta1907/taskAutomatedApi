@@ -34,12 +34,14 @@ const registerUser = (req, res) => __awaiter(void 0, void 0, void 0, function* (
 exports.registerUser = registerUser;
 const loginUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { username, password } = req.body;
+    const secretKey = process.env.JWT_SECRET;
+    console.log(secretKey, "sec");
     try {
         const user = yield User_1.default.findOne({ username, password });
         if (!user) {
             return res.status(401).json({ message: 'Invalid username or password' });
         }
-        const token = jsonwebtoken_1.default.sign({ userId: user._id }, 'your-secret-key', { expiresIn: '1h' });
+        const token = jsonwebtoken_1.default.sign({ userId: user._id }, secretKey, { expiresIn: '1h' });
         res.status(200).json({ message: 'Login successful', token });
     }
     catch (error) {

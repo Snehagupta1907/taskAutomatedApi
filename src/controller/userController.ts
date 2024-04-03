@@ -20,6 +20,8 @@ export const registerUser = async (req: Request, res: Response) => {
 
 export const loginUser = async (req: Request, res: Response) => {
     const { username, password } = req.body;
+    const secretKey = process.env.JWT_SECRET;
+    console.log(secretKey,"sec")
 
     try {
         const user = await User.findOne({ username, password });
@@ -28,7 +30,7 @@ export const loginUser = async (req: Request, res: Response) => {
             return res.status(401).json({ message: 'Invalid username or password' });
         }
 
-        const token = jwt.sign({ userId: user._id }, 'your-secret-key', { expiresIn: '1h' });
+        const token = jwt.sign({ userId: user._id }, secretKey, { expiresIn: '1h' });
         res.status(200).json({ message: 'Login successful', token });
     } catch (error) {
         console.error('Error logging in user:', error);
