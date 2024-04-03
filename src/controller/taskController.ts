@@ -126,15 +126,8 @@ export const executeTask = async (task: ITask) => {
       data: task.data,
     });
 
-    let taskStatus;
-    if (response.status === 200) {
-      task.status = "complete";
-      taskStatus = "complete";
-    } else {
-      task.status = "failed";
-      taskStatus = "failed";
-    }
-
+    const taskStatus = response.status === 200 ? "complete" : "failed";
+    task.status = taskStatus;
     await task.save();
     return { responseData: response.data, taskStatus };
   } catch (err) {
@@ -146,33 +139,39 @@ export const executeTask = async (task: ITask) => {
 };
 
 agenda.define("process task", async (job: any): Promise<void> => {
-  const task = await Task.findById(job.attrs.data.taskId);
+  try {
+    const task = await Task.findById(job.attrs.data.taskId);
+    if (!task) {
+      console.error("Task not found");
+      return;
+    }
 
-  if (!task) {
-    console.error("Task not found");
-    return null;
-  }
+    const { responseData, taskStatus } = await executeTask(task);
+    console.log(responseData, taskStatus, "stat");
 
-  const { responseData, taskStatus } = await executeTask(task);
-
-  console.log(responseData,taskStatus,"stat")
-
-  if (taskStatus === "complete") {
-    console.log("Task is done");
+    if (taskStatus === "complete") {
+      console.log("Task is done");
+    }
+  } catch (err) {
+    console.error("Error processing task:", err);
   }
 });
 
 (async () => {
-  await agenda.start();
+  try {
+    await agenda.start();
+    console.log("Agenda scheduler started successfully");
+  } catch (err) {
+    console.error("Error starting agenda scheduler:", err);
+  }
 })();
 
-// Task creation endpoint
 export const createTask = async (req: Request, res: Response) => {
-  const { endpoint, delay, method } = req.query;
-  const { to, subject, text } = req.body;
-  const user = req.user;
-
   try {
+    const { endpoint, delay, method } = req.query;
+    const { to, subject, text } = req.body;
+    const user = req.user;
+
     if (!user) {
       throw new Error("User not found");
     }
@@ -192,7 +191,6 @@ export const createTask = async (req: Request, res: Response) => {
     }
 
     const task = new Task(taskData);
-
     await task.save();
     console.log("Task saved");
 
@@ -203,25 +201,26 @@ export const createTask = async (req: Request, res: Response) => {
       message: "Task scheduled successfully",
       taskId: task._id,
     });
-  } catch (err: any) {
+  } catch (err) {
+    console.error("Error creating task:", err);
     res.status(400).send(err.message);
   }
 };
 
 export const getTasksByStatus = async (req: Request, res: Response) => {
-  const { status } = req.params;
-  const user = req.user; 
-
   try {
-      if (!user) {
-          return res.status(401).json({ message: 'Unauthorized: User not found' });
-      }
+    const { status } = req.params;
+    const user = req.user; 
 
-      const tasks = await Task.find({ status, userId: user._id });
+    if (!user) {
+      return res.status(401).json({ message: 'Unauthorized: User not found' });
+    }
 
-      res.status(200).json(tasks);
+    const tasks = await Task.find({ status, userId: user._id });
+    res.status(200).json(tasks);
   } catch (err) {
-      res.status(500).json({ message: "Internal Server Error" });
+    console.error("Error fetching tasks by status:", err);
+    res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
@@ -234,9 +233,9 @@ export const getTasksByUserToken = async (req: Request, res: Response) => {
     }
 
     const tasks = await Task.find({ userId: user._id });
-
     res.status(200).json(tasks);
-  } catch (err: any) {
+  } catch (err) {
+    console.error("Error fetching tasks by user token:", err);
     res.status(400).send(err.message);
   }
 };

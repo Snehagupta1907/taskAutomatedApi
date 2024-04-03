@@ -28,15 +28,8 @@ const executeTask = (task) => __awaiter(void 0, void 0, void 0, function* () {
             headers: { "Content-Type": "application/json" },
             data: task.data,
         });
-        let taskStatus;
-        if (response.status === 200) {
-            task.status = "complete";
-            taskStatus = "complete";
-        }
-        else {
-            task.status = "failed";
-            taskStatus = "failed";
-        }
+        const taskStatus = response.status === 200 ? "complete" : "failed";
+        task.status = taskStatus;
         yield task.save();
         return { responseData: response.data, taskStatus };
     }
@@ -49,26 +42,36 @@ const executeTask = (task) => __awaiter(void 0, void 0, void 0, function* () {
 });
 exports.executeTask = executeTask;
 agenda.define("process task", (job) => __awaiter(void 0, void 0, void 0, function* () {
-    const task = yield Task_1.default.findById(job.attrs.data.taskId);
-    if (!task) {
-        console.error("Task not found");
-        return null;
+    try {
+        const task = yield Task_1.default.findById(job.attrs.data.taskId);
+        if (!task) {
+            console.error("Task not found");
+            return;
+        }
+        const { responseData, taskStatus } = yield (0, exports.executeTask)(task);
+        console.log(responseData, taskStatus, "stat");
+        if (taskStatus === "complete") {
+            console.log("Task is done");
+        }
     }
-    const { responseData, taskStatus } = yield (0, exports.executeTask)(task);
-    console.log(responseData, taskStatus, "stat");
-    if (taskStatus === "complete") {
-        console.log("Task is done");
+    catch (err) {
+        console.error("Error processing task:", err);
     }
 }));
 (() => __awaiter(void 0, void 0, void 0, function* () {
-    yield agenda.start();
-}))();
-// Task creation endpoint
-const createTask = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { endpoint, delay, method } = req.query;
-    const { to, subject, text } = req.body;
-    const user = req.user;
     try {
+        yield agenda.start();
+        console.log("Agenda scheduler started successfully");
+    }
+    catch (err) {
+        console.error("Error starting agenda scheduler:", err);
+    }
+}))();
+const createTask = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { endpoint, delay, method } = req.query;
+        const { to, subject, text } = req.body;
+        const user = req.user;
         if (!user) {
             throw new Error("User not found");
         }
@@ -95,14 +98,15 @@ const createTask = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         });
     }
     catch (err) {
+        console.error("Error creating task:", err);
         res.status(400).send(err.message);
     }
 });
 exports.createTask = createTask;
 const getTasksByStatus = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { status } = req.params;
-    const user = req.user;
     try {
+        const { status } = req.params;
+        const user = req.user;
         if (!user) {
             return res.status(401).json({ message: 'Unauthorized: User not found' });
         }
@@ -110,6 +114,7 @@ const getTasksByStatus = (req, res) => __awaiter(void 0, void 0, void 0, functio
         res.status(200).json(tasks);
     }
     catch (err) {
+        console.error("Error fetching tasks by status:", err);
         res.status(500).json({ message: "Internal Server Error" });
     }
 });
@@ -124,6 +129,7 @@ const getTasksByUserToken = (req, res) => __awaiter(void 0, void 0, void 0, func
         res.status(200).json(tasks);
     }
     catch (err) {
+        console.error("Error fetching tasks by user token:", err);
         res.status(400).send(err.message);
     }
 });
