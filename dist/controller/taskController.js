@@ -15,15 +15,17 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getTasksByUserToken = exports.getTasksByStatus = exports.createTask = exports.executeTask = void 0;
+exports.getTasksByUserToken = exports.getTasksByStatus = exports.executeTask = exports.createTask = void 0;
 const Task_1 = __importDefault(require("../models/Task"));
 const axios_1 = __importDefault(require("axios"));
 const agenda_1 = __importDefault(require("agenda"));
 const agenda = new agenda_1.default({ db: { address: process.env.MONGODB_URI } });
-function millisecondsToMinutes(milliseconds) {
-    return milliseconds / 60000;
-}
-const executeTask = (task) => __awaiter(void 0, void 0, void 0, function* () {
+const processTaskJob = (job) => __awaiter(void 0, void 0, void 0, function* () {
+    const task = yield Task_1.default.findById(job.attrs.data.taskId);
+    if (!task) {
+        console.error("Task not found");
+        return null;
+    }
     try {
         const response = yield (0, axios_1.default)({
             method: task.method,
@@ -31,50 +33,33 @@ const executeTask = (task) => __awaiter(void 0, void 0, void 0, function* () {
             headers: { "Content-Type": "application/json" },
             data: task.data,
         });
-        const taskStatus = response.status === 200 ? "complete" : "failed";
-        task.status = taskStatus;
+        task.status = response.status === 200 ? "complete" : "failed";
         yield task.save();
-        return { responseData: response.data, taskStatus };
+        console.log("Task processed successfully");
+        return task.status;
     }
-    catch (err) {
-        console.error("Error executing task:", err);
+    catch (error) {
+        console.error("Error processing task:", error);
         task.status = "failed";
         yield task.save();
-        return { responseData: null, taskStatus: "failed" };
+        return "failed";
     }
 });
-exports.executeTask = executeTask;
 agenda.define("process task", (job) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const task = yield Task_1.default.findById(job.attrs.data.taskId);
-        if (!task) {
-            console.error("Task not found");
-            return;
-        }
-        const { responseData, taskStatus } = yield (0, exports.executeTask)(task);
-        console.log(responseData, taskStatus, "stat");
-        if (taskStatus === "complete") {
-            console.log("Task is done");
-        }
-    }
-    catch (err) {
-        console.error("Error processing task:", err);
+    const taskStatus = yield processTaskJob(job);
+    if (taskStatus === "complete") {
+        console.log("Task is done");
     }
 }));
 (() => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        yield agenda.start();
-        console.log("Agenda scheduler started successfully");
-    }
-    catch (err) {
-        console.error("Error starting agenda scheduler:", err);
-    }
+    yield agenda.start();
 }))();
+// Task creation endpoint
 const createTask = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { endpoint, delay, method } = req.query;
+    const { to, subject, text } = req.body;
+    const user = req.user;
     try {
-        const { endpoint, delay, method } = req.query;
-        const { to, subject, text } = req.body;
-        const user = req.user;
         if (!user) {
             throw new Error("User not found");
         }
@@ -97,27 +82,49 @@ const createTask = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         yield agenda.schedule(scheduledTime, "process task", { taskId: task._id });
         res.status(200).json({
             message: "Task scheduled successfully",
-            taskId: task._id,
+            taskId: task._id
         });
     }
     catch (err) {
-        console.error("Error creating task:", err);
         res.status(400).send(err.message);
     }
 });
 exports.createTask = createTask;
-const getTasksByStatus = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const executeTask = (task) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { status } = req.params;
-        const user = req.user;
-        if (!user) {
-            return res.status(401).json({ message: 'Unauthorized: User not found' });
+        const response = yield (0, axios_1.default)({
+            method: task.method,
+            url: task.endpoint,
+            headers: { "Content-Type": "application/json" },
+            data: task.data,
+        });
+        let taskStatus;
+        if (response.status === 200) {
+            task.status = "complete";
+            taskStatus = "complete";
         }
-        const tasks = yield Task_1.default.find({ status, userId: user._id });
+        else {
+            task.status = "failed";
+            taskStatus = "failed";
+        }
+        yield task.save();
+        return { responseData: response.data, taskStatus };
+    }
+    catch (err) {
+        console.error("Error executing task:", err);
+        task.status = "failed";
+        yield task.save();
+        return { responseData: null, taskStatus: "failed" };
+    }
+});
+exports.executeTask = executeTask;
+const getTasksByStatus = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { status } = req.params;
+    try {
+        const tasks = yield Task_1.default.find({ status });
         res.status(200).json(tasks);
     }
     catch (err) {
-        console.error("Error fetching tasks by status:", err);
         res.status(500).json({ message: "Internal Server Error" });
     }
 });
@@ -132,7 +139,6 @@ const getTasksByUserToken = (req, res) => __awaiter(void 0, void 0, void 0, func
         res.status(200).json(tasks);
     }
     catch (err) {
-        console.error("Error fetching tasks by user token:", err);
         res.status(400).send(err.message);
     }
 });
