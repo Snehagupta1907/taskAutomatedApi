@@ -30,7 +30,8 @@ const TaskSchema = new mongoose_1.Schema({
     delay: { type: Number, default: 0 },
     method: { type: String, required: true },
     status: { type: String, default: 'queued' },
-    userId: { type: mongoose_1.default.Types.ObjectId, ref: 'User' }
+    userId: { type: mongoose_1.default.Types.ObjectId, ref: 'User' },
+    jobId: { type: String }
 });
 exports.default = mongoose_1.default.model('Task', TaskSchema);
 //# sourceMappingURL=Task.js.map

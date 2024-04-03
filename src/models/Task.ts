@@ -6,7 +6,8 @@ export interface ITask extends Document {
     delay: number;
     method: string;
     status: string;
-    userId: mongoose.Types.ObjectId; 
+    userId: mongoose.Types.ObjectId;
+    jobId?: string; 
 }
 
 const TaskSchema: Schema = new Schema({
@@ -15,7 +16,8 @@ const TaskSchema: Schema = new Schema({
     delay: { type: Number, default: 0 },
     method: { type: String, required: true },
     status: { type: String, default: 'queued' },
-    userId: { type: mongoose.Types.ObjectId, ref: 'User' } 
+    userId: { type: mongoose.Types.ObjectId, ref: 'User' },
+    jobId: { type: String } 
 });
 
 export default mongoose.model<ITask>('Task', TaskSchema);
