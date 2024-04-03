@@ -198,10 +198,8 @@ export const createTask = async (req: Request, res: Response) => {
     await task.save();
     console.log("Task saved");
 
-    let time=millisecondsToMinutes(+task.delay);
-    console.log(time,"time")
-    // const scheduledTime = new Date(Date.now() + task.delay);
-    await agenda.schedule(`${time} minutes from now`, "process task", { taskId: task._id });
+    const scheduledTime = new Date(Date.now() + task.delay);
+    await agenda.schedule(scheduledTime, "process task", { taskId: task._id });
 
     res.status(200).json({
       message: "Task scheduled successfully",

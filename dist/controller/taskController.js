@@ -93,10 +93,8 @@ const createTask = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         const task = new Task_1.default(taskData);
         yield task.save();
         console.log("Task saved");
-        let time = millisecondsToMinutes(+task.delay);
-        console.log(time, "time");
-        // const scheduledTime = new Date(Date.now() + task.delay);
-        yield agenda.schedule(`${time} minutes from now`, "process task", { taskId: task._id });
+        const scheduledTime = new Date(Date.now() + task.delay);
+        yield agenda.schedule(scheduledTime, "process task", { taskId: task._id });
         res.status(200).json({
             message: "Task scheduled successfully",
             taskId: task._id,
