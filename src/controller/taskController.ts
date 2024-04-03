@@ -117,6 +117,10 @@ import Agenda from "agenda";
 
 const agenda = new Agenda({ db: { address: process.env.MONGODB_URI } });
 
+function millisecondsToMinutes(milliseconds:number) {
+  return milliseconds / 60000;
+}
+
 export const executeTask = async (task: ITask) => {
   try {
     const response = await axios({
@@ -194,8 +198,10 @@ export const createTask = async (req: Request, res: Response) => {
     await task.save();
     console.log("Task saved");
 
-    const scheduledTime = new Date(Date.now() + task.delay);
-    await agenda.schedule(scheduledTime, "process task", { taskId: task._id });
+    let time=millisecondsToMinutes(+task.delay);
+    console.log(time,"time")
+    // const scheduledTime = new Date(Date.now() + task.delay);
+    await agenda.schedule(`${time} minutes from now`, "process task", { taskId: task._id });
 
     res.status(200).json({
       message: "Task scheduled successfully",
