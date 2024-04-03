@@ -1,21 +1,33 @@
 import { Request, Response } from "express";
 import Task, { ITask } from "../models/Task";
 import axios, { AxiosResponse } from "axios";
-import schedule from "node-schedule";
 
-// Schedule task execution
-const scheduleTaskExecution = (task: ITask) => {
-  const job = schedule.scheduleJob(new Date(Date.now() + task.delay), async () => {
-    try {
-      const { responseData, taskStatus } = await executeTask(task);
-      console.log("Task execution complete:",responseData,taskStatus);
-    } catch (err) {
-      console.error("Error executing task:", err);
-    }
-  });
+// Queue class 
+class Queue<T> {
+  private items: T[];
 
-  console.log(job,"job")
-};
+  constructor() {
+    this.items = [];
+  }
+
+  enqueue(item: T) {
+    this.items.push(item);
+  }
+
+  dequeue(): T | undefined {
+    return this.items.shift();
+  }
+
+  isEmpty(): boolean {
+    return this.items.length === 0;
+  }
+
+  size(): number {
+    return this.items.length;
+  }
+}
+
+const taskQueue = new Queue<ITask>();
 
 // Task creation post endpoint
 export const createTask = async (req: Request, res: Response) => {
@@ -47,10 +59,13 @@ export const createTask = async (req: Request, res: Response) => {
     await task.save();
     console.log("Task saved");
 
-    // Schedule task execution
-    scheduleTaskExecution(task);
 
-    res.status(200).json({ message: "Task scheduled successfully" });
+    taskQueue.enqueue(task);
+
+
+    processQueue();
+
+    res.status(200).json({ message: "Task enqueued successfully" });
   } catch (err: any) {
     res.status(400).send(err.message);
   }
@@ -92,6 +107,26 @@ const executeTask = async (task: ITask) => {
     await task.save();
     return { responseData: null, taskStatus: "failed" };
   }
+};
+
+
+const processQueue = async () => {
+
+  if (taskQueue.isEmpty()) return;
+
+
+  const task = taskQueue.dequeue();
+
+  try {
+    await new Promise(resolve => setTimeout(resolve, task.delay));
+
+    const { responseData, taskStatus } = await executeTask(task);
+    console.log("Task execution complete:", responseData, taskStatus);
+  } catch (err) {
+    console.error("Error executing task:", err);
+  }
+
+  processQueue();
 };
 
 // get task status
